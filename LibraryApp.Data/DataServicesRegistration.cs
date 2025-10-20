@@ -1,5 +1,6 @@
 ﻿using LibraryApp.Data.Context;
 using LibraryApp.Data.Repositories;
+using LibraryApp.Domain.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,13 +11,23 @@ public static class DataServicesRegistration
 {
     public static IServiceCollection AddDataServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<LibraryDbContext>(options => options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+        // DbContext'i kaydet
+        services.AddDbContext<LibraryDbContext>(options => 
+            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
-        services.AddScoped<AuthorRepository>();
-        services.AddScoped<BookRepository>();
-        services.AddScoped<CategoryRepository>();
-        services.AddScoped<MemberRepository>();
-        services.AddScoped<BorrowRecordRepository>();
+        // UnitOfWork'ü kaydet
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // Repository'leri Interface ile kaydet
+        services.AddScoped<IAuthorRepository, AuthorRepository>();
+        services.AddScoped<IBookRepository, BookRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IMemberRepository, MemberRepository>();
+        services.AddScoped<IBorrowRecordRepository, BorrowRecordRepository>();
+
+        // Domain Service'leri kaydet
+        services.AddScoped<IBorrowingService, BorrowingService>();
+        services.AddScoped<IBookAvailabilityService, BookAvailabilityService>();
 
         return services;
     }

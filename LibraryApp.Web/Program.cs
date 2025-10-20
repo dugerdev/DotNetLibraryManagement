@@ -1,33 +1,70 @@
 using LibraryApp.Data;
+using LibraryApp.Application;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDataServices(builder.Configuration);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddApplicationServices();
+
+
+builder.Services.AddControllers();
+builder.Services.AddOpenApi("v1", options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Info = new()
+        {
+            Title = "Library Management API",
+            Version = "v1",
+            Description = "K�t�phane y�netim sistemi REST API - Clean Architecture ile geli�tirilmi�tir",
+            Contact = new()
+            {
+                Name = "Library App Team",
+                Email = "support@libraryapp.com"
+            }
+        };
+        return Task.CompletedTask;
+    });
+});
+
+// CORS yap�land�rmas� (Frontend'den eri�im i�in)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+    app.MapOpenApi();
+
+    app.MapScalarApiReference(options =>
+    {
+        options
+        .WithTitle("Library Management Api")
+        .WithTheme(ScalarTheme.Purple)
+        .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+       
+    });
 }
 
 app.UseHttpsRedirection();
-app.UseRouting();
+
+// CORS middleware
+app.UseCors("AllowAll");
 
 app.UseAuthorization();
 
-app.MapStaticAssets();
-
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
-
+app.MapControllers();
 
 app.Run();
